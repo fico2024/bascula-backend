@@ -128,4 +128,22 @@ router.get('/history', async (req, res) => {
     } catch (e: any) { res.status(400).json({ error: e.message }) }
 });
 
+// Eliminar un ticket pendiente (pesaje accidental)
+router.delete('/:id', async (req, res) => {
+    try {
+        const ticketId = parseInt(req.params.id);
+
+        const ticket = await prisma.weighingTicket.findUnique({ where: { id: ticketId } });
+        if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
+        if (ticket.status !== 'PENDING') return res.status(400).json({ error: 'Solo se pueden eliminar tickets pendientes (en planta).' });
+
+        // Auditoría antes de borrar
+        await logAction((req as any).user?.id || 1, 'ELIMINACION_TICKET_PENDIENTE', { ticketId: ticket.id, vehicleId: ticket.vehicleId });
+
+        await prisma.weighingTicket.delete({ where: { id: ticketId } });
+
+        res.json({ success: true, message: 'Ticket pendiente eliminado correctamente.' });
+    } catch (e: any) { res.status(400).json({ error: e.message }) }
+});
+
 export default router;
