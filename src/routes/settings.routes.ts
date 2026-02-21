@@ -62,10 +62,11 @@ router.get('/backup', async (req, res) => {
 
 // Descargar Agente Ejecutable
 router.get('/download-agent', (req, res) => {
-    const agentPath = 'c:/wamp64/www/bascula/local-agent/dist/local-agent.exe';
-    res.download(agentPath, 'bascula.exe', (err) => {
+    const path = require('path');
+    const agentPath = path.join(__dirname, '..', '..', 'assets', 'bascula.exe');
+    res.download(agentPath, 'bascula.exe', (err: any) => {
         if (err) {
-            res.status(404).json({ error: "Archivo del agente no encontrado. Asegúrese de haber generado el EXE." });
+            res.status(404).json({ error: "Archivo del agente no encontrado en el servidor." });
         }
     });
 });
