@@ -50,6 +50,82 @@ router.post('/in', async (req, res) => {
     } catch (e: any) { res.status(400).json({ error: e.message }) }
 });
 
+// Lógica para pesaje de 1 sola pasada (Requiere que el vehículo tenga Tara configurada)
+router.post('/single-pass', async (req, res) => {
+    try {
+        const {
+            vehicleId,
+            companyId,
+            productId,
+            driverId,
+            weightCurrent, // Puede ser Bruto (peso cargado) o Tara (peso vacío, pero usamos la de la BD por defecto)
+            userId,
+            movementType,
+            referenciaGuia,
+            observations,
+            origen,
+            destino
+        } = req.body;
+
+        const vehicle = await prisma.vehicle.findUnique({ where: { id: parseInt(vehicleId) } });
+        if (!vehicle) return res.status(400).json({ error: 'Vehículo no encontrado' });
+
+        const tara = Number(vehicle.taraRegistrada || 0);
+        if (tara <= 0) return res.status(400).json({ error: 'Este vehículo no tiene Tara registrada en el sistema.' });
+
+        // Si el peso actual es mayor a la tara, entendemos que está trayendo carga y weightIn es Bruto, weightOut es Tara
+        // Si el peso actual es menor a la tara (ej, viene a buscar carga), entendemos que weightIn es Tara, weightOut es Bruto
+        // Para simplificar: el ticket siempre registra Entrada(Tara) Salida(Bruto) o viceversa, pero calcularemos el neto igual
+        const currentW = Number(weightCurrent);
+
+        let weightIn = 0;
+        let weightOut = 0;
+
+        if (currentW > tara) {
+            // Vehículo cargado
+            weightIn = tara;
+            weightOut = currentW;
+        } else {
+            // Error, no puede ser que el vehículo pese menos que su tara, o en su defecto está descargado.
+            // Lo tomamos como que viene a retirar carga, pero la balanza dice X.
+            // Para estandarizar, siempre:
+            weightIn = tara;
+            weightOut = currentW;
+        }
+
+        const weightNet = Math.abs(weightIn - weightOut);
+
+        const ticket = await prisma.weighingTicket.create({
+            data: {
+                status: 'COMPLETED', // Sale completado de una
+                movementType: movementType || 'INTERNAL',
+                weightIn,
+                weightOut,
+                weightNet,
+                vehicleId: parseInt(vehicleId),
+                companyId: parseInt(companyId),
+                productId: parseInt(productId),
+                driverId: parseInt(driverId),
+                userId: userId || 1,
+                referenciaGuia,
+                observations,
+                origen,
+                destino,
+                datetimeIn: new Date(),
+                datetimeOut: new Date()
+            },
+            include: {
+                company: true, vehicle: true, product: true, driver: true
+            }
+        });
+
+        // Auditoría
+        await logAction(userId || 1, 'CREACION_TICKET_UNICA_PASADA', { ticketId: ticket.id, vehicleId, weightNet });
+
+        res.json(ticket);
+    } catch (e: any) { res.status(400).json({ error: e.message }) }
+});
+
 // Lógica para cerrar un ticket de salida (Cerrar transacción)
 router.post('/out/:id', async (req, res) => {
     try {
