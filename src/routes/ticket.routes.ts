@@ -20,7 +20,9 @@ router.post('/in', async (req, res) => {
             userId,
             movementType,
             referenciaGuia,
-            observations
+            observations,
+            origen,
+            destino
         } = req.body;
 
         const ticket = await prisma.weighingTicket.create({
@@ -35,6 +37,8 @@ router.post('/in', async (req, res) => {
                 userId: userId || 1,
                 referenciaGuia,
                 observations,
+                origen,
+                destino,
                 datetimeIn: new Date()
             }
         });
