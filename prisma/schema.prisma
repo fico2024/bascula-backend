@@ -97,6 +97,7 @@ model WeighingTicket {
   id              Int          @id @default(autoincrement()) // Número de ticket
   status          TicketStatus @default(PENDING)
   movementType    MovementType @default(INTERNAL)
+  isManual        Boolean      @default(false)
   
   datetimeIn      DateTime     @default(now())
   weightIn        Decimal

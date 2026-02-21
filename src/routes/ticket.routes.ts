@@ -22,13 +22,15 @@ router.post('/in', async (req, res) => {
             referenciaGuia,
             observations,
             origen,
-            destino
+            destino,
+            isManual
         } = req.body;
 
         const ticket = await prisma.weighingTicket.create({
             data: {
                 status: 'PENDING',
                 movementType: movementType || 'INTERNAL',
+                isManual: isManual || false,
                 weightIn,
                 vehicleId,
                 companyId,
@@ -44,7 +46,7 @@ router.post('/in', async (req, res) => {
         });
 
         // Auditoría
-        await logAction(userId || 1, 'CREACION_TICKET_ENTRADA', { ticketId: ticket.id, vehicleId });
+        await logAction(userId || 1, isManual ? 'CREACION_TICKET_ENTRADA_MANUAL' : 'CREACION_TICKET_ENTRADA', { ticketId: ticket.id, vehicleId });
 
         res.json(ticket);
     } catch (e: any) { res.status(400).json({ error: e.message }) }
@@ -64,7 +66,8 @@ router.post('/single-pass', async (req, res) => {
             referenciaGuia,
             observations,
             origen,
-            destino
+            destino,
+            isManual
         } = req.body;
 
         const vehicle = await prisma.vehicle.findUnique({ where: { id: parseInt(vehicleId) } });
@@ -99,6 +102,7 @@ router.post('/single-pass', async (req, res) => {
             data: {
                 status: 'COMPLETED', // Sale completado de una
                 movementType: movementType || 'INTERNAL',
+                isManual: isManual || false,
                 weightIn,
                 weightOut,
                 weightNet,
@@ -120,7 +124,7 @@ router.post('/single-pass', async (req, res) => {
         });
 
         // Auditoría
-        await logAction(userId || 1, 'CREACION_TICKET_UNICA_PASADA', { ticketId: ticket.id, vehicleId, weightNet });
+        await logAction(userId || 1, isManual ? 'CREACION_TICKET_UNICA_MANUAL' : 'CREACION_TICKET_UNICA_PASADA', { ticketId: ticket.id, vehicleId, weightNet });
 
         res.json(ticket);
     } catch (e: any) { res.status(400).json({ error: e.message }) }
@@ -130,7 +134,7 @@ router.post('/single-pass', async (req, res) => {
 router.post('/out/:id', async (req, res) => {
     try {
         const ticketId = parseInt(req.params.id);
-        const { weightOut } = req.body;
+        const { weightOut, isManual } = req.body;
 
         const ticket = await prisma.weighingTicket.findUnique({ where: { id: ticketId } });
         if (!ticket) return res.status(400).json({ error: 'Ticket no encontrado' });
@@ -138,11 +142,15 @@ router.post('/out/:id', async (req, res) => {
         // Neto = Valor absoluto de la diferencia
         const weightNet = Math.abs(Number(ticket.weightIn) - Number(weightOut));
 
+        // Si el ticket ya era manual (de la entrada) o ahora la salida es manual, será marcado como manual.
+        const totalManual = ticket.isManual || isManual;
+
         const updated = await prisma.weighingTicket.update({
             where: { id: ticketId },
             data: {
                 weightOut,
                 weightNet,
+                isManual: totalManual,
                 datetimeOut: new Date(),
                 status: 'COMPLETED'
             },
@@ -152,7 +160,7 @@ router.post('/out/:id', async (req, res) => {
         });
 
         // Auditoría
-        await logAction((req as any).user?.id || 1, 'CIERRE_TICKET_SALIDA', { ticketId: updated.id, weightNet: updated.weightNet });
+        await logAction((req as any).user?.id || 1, isManual ? 'CIERRE_TICKET_SALIDA_MANUAL' : 'CIERRE_TICKET_SALIDA', { ticketId: updated.id, weightNet: updated.weightNet });
 
         res.json(updated);
     } catch (e: any) { res.status(400).json({ error: e.message }) }
