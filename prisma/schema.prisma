@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+  AUDITOR
+}
+
+enum TicketStatus {
+  PENDING   // En Tránsito
+  COMPLETED // Completado
+  CANCELLED // Anulado
+}
+
+enum MovementType {
+  PURCHASE  // Recepción/Compra
+  SALE      // Despacho/Venta
+  INTERNAL  // Pesaje Interno
+}
+
+enum CompanyType {
+  CLIENT
+  PROVIDER
+  BOTH
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(OPERATOR)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  tickets      WeighingTicket[]
+  auditLogs    AuditLog[]
+}
+
+model Company {
+  id           Int         @id @default(autoincrement())
+  razonSocial  String
+  cuitRut      String      @unique
+  tipo         CompanyType @default(CLIENT)
+  direccion    String?
+  telefono     String?
+  email        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  vehicles     Vehicle[]
+  tickets      WeighingTicket[]
+}
+
+model Product {
+  id             Int      @id @default(autoincrement())
+  codigoSku      String   @unique
+  descripcion    String
+  precioUnitario Decimal?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tickets        WeighingTicket[]
+}
+
+model Vehicle {
+  id               Int      @id @default(autoincrement())
+  patenteChasis    String   @unique
+  patenteAcoplado  String?
+  taraRegistrada   Decimal?
+  companyId        Int
+  company          Company  @relation(fields: [companyId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tickets          WeighingTicket[]
+}
+
+model Driver {
+  id            Int      @id @default(autoincrement())
+  dniDocumento  String   @unique
+  nombreCompleto String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tickets       WeighingTicket[]
+}
+
+model WeighingTicket {
+  id              Int          @id @default(autoincrement()) // Número de ticket
+  status          TicketStatus @default(PENDING)
+  movementType    MovementType @default(INTERNAL)
+  
+  datetimeIn      DateTime     @default(now())
+  weightIn        Decimal
+  
+  datetimeOut     DateTime?
+  weightOut       Decimal?
+  
+  weightNet       Decimal?     // Diferencia calculada
+  
+  referenciaGuia  String?      // Nro remito / guía
+  observations    String?      @db.Text
+  origen          String?      // Lugar de origen del viaje
+  destino         String?      // Lugar de destino del viaje
+  
+  // Relaciones
+  userId          Int
+  user            User         @relation(fields: [userId], references: [id])
+  
+  companyId       Int
+  company         Company      @relation(fields: [companyId], references: [id])
+  
+  productId       Int
+  product         Product      @relation(fields: [productId], references: [id])
+  
+  vehicleId       Int
+  vehicle         Vehicle      @relation(fields: [vehicleId], references: [id])
+  
+  driverId        Int
+  driver          Driver       @relation(fields: [driverId], references: [id])
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  action      String   // ej. "Edición manual de peso", "Ticket anulado"
+  contextData String?  @db.Text // JSON con detalles opcionales
+  timestamp   DateTime @default(now())
+}
+
+model SystemSettings {
+  id              Int      @id @default(1)
+  companyName     String   @default("BASCULA CASILDA")
+  companyAddress  String?
+  companyPhone    String?
+  companyEmail    String?
+  companyLogo     String?  @db.LongText
+  updatedAt       DateTime @updatedAt
+}
