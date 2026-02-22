@@ -132,7 +132,8 @@ router.put('/vehicles/:id', async (req, res) => {
 
 router.put('/drivers/:id', async (req, res) => {
     try {
-        const item = await prisma.driver.update({ where: { id: parseInt(req.params.id) }, data: req.body });
+        const { id, createdAt, updatedAt, tickets, ...rest } = req.body;
+        const item = await prisma.driver.update({ where: { id: parseInt(req.params.id) }, data: rest });
         res.json(item);
     } catch (e: any) { res.status(400).json({ error: e.message }) }
 });

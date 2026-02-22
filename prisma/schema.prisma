@@ -87,6 +87,9 @@ model Driver {
   id            Int      @id @default(autoincrement())
   dniDocumento  String   @unique
   nombreCompleto String
+  telefono      String?
+  domicilio     String?
+  foto          String?  @db.Text
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
