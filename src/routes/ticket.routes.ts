@@ -178,7 +178,7 @@ router.get('/pending', async (req, res) => {
 // Historial de tickets completados con filtros
 router.get('/history', async (req, res) => {
     try {
-        const { from, to, search, companyId, productId } = req.query;
+        const { from, to, search, companyId, productId, movementType } = req.query;
 
         const where: any = { status: 'COMPLETED' };
 
@@ -193,9 +193,10 @@ router.get('/history', async (req, res) => {
             }
         }
 
-        // Filtro por empresa/producto
+        // Filtro por empresa/producto/tipo
         if (companyId) where.companyId = parseInt(companyId as string);
         if (productId) where.productId = parseInt(productId as string);
+        if (movementType) where.movementType = movementType as string;
 
         // Búsqueda textual (Patente o Razón Social)
         if (search) {
