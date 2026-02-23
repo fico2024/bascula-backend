@@ -4,9 +4,8 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware
 
 const router = Router();
 
-// Todas las rutas de configuración requieren ser ADMIN
+// Sólo autenticación es requerida para LEER configuración (necesario para PDFs de Operadores)
 router.use(authenticateToken);
-router.use(authorizeRoles('ADMIN'));
 
 // Obtener configuración actual
 router.get('/', async (req, res) => {
@@ -22,7 +21,7 @@ router.get('/', async (req, res) => {
 });
 
 // Actualizar configuración
-router.post('/', async (req, res) => {
+router.post('/', authorizeRoles('ADMIN'), async (req, res) => {
     try {
         const { companyName, companyAddress, companyPhone, companyEmail, companyLogo } = req.body;
 
@@ -37,7 +36,7 @@ router.post('/', async (req, res) => {
 });
 
 // Exportar Backup JSON
-router.get('/backup', async (req, res) => {
+router.get('/backup', authorizeRoles('ADMIN'), async (req, res) => {
     try {
         const [users, companies, products, vehicles, drivers, tickets, settings, logs] = await Promise.all([
             prisma.user.findMany(),
