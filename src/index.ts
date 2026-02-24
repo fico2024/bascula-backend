@@ -18,6 +18,22 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+import fs from 'fs';
+import path from 'path';
+
+app.get('/api/ping-agent', (req, res) => {
+    const agentPath1 = path.join(process.cwd(), 'assets', 'bascula.exe');
+    const agentPath2 = path.join(__dirname, '..', '..', 'assets', 'bascula.exe');
+    res.json({
+        cwd: process.cwd(),
+        dirname: __dirname,
+        path1: agentPath1,
+        exists1: fs.existsSync(agentPath1),
+        path2: agentPath2,
+        exists2: fs.existsSync(agentPath2)
+    });
+});
+
 app.use('/api/entities', entityRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/auth', authRoutes);
