@@ -62,7 +62,8 @@ router.get('/backup', authorizeRoles('ADMIN'), async (req, res) => {
 // Descargar Agente Ejecutable
 router.get('/download-agent', (req, res) => {
     const path = require('path');
-    const agentPath = path.join(__dirname, '..', '..', 'assets', 'bascula.exe');
+    const agentPath = path.join(process.cwd(), 'assets', 'bascula.exe');
+    console.log("[SETTINGS] Descargando agente desde:", agentPath);
     res.download(agentPath, 'bascula.exe', (err: any) => {
         if (err) {
             res.status(404).json({ error: "Archivo del agente no encontrado en el servidor." });
