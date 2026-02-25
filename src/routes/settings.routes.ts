@@ -20,8 +20,8 @@ router.get('/', async (req, res) => {
     } catch (e: any) { res.status(400).json({ error: e.message }) }
 });
 
-// Actualizar configuración
-router.post('/', authorizeRoles('ADMIN'), async (req, res) => {
+// Actualizar configuración (Empresa: ADMIN, OPERATOR y AUDITOR)
+router.post('/', authorizeRoles('ADMIN', 'OPERATOR', 'AUDITOR'), async (req, res) => {
     try {
         const { companyName, companyAddress, companyPhone, companyEmail, companyLogo } = req.body;
 
