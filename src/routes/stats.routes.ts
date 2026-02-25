@@ -85,4 +85,88 @@ router.get('/dashboard', async (req, res) => {
     } catch (e: any) { res.status(400).json({ error: e.message }) }
 });
 
+// Reporte Completo (Filtrable por rango de fechas)
+router.get('/reports', async (req: any, res) => {
+    try {
+        const { from, to } = req.query;
+        const dateFrom = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const dateTo = to ? new Date(to as string) : new Date();
+        dateTo.setHours(23, 59, 59, 999);
+
+        const tickets = await prisma.weighingTicket.findMany({
+            where: {
+                status: 'COMPLETED',
+                datetimeOut: { gte: dateFrom, lte: dateTo }
+            },
+            include: {
+                company: { select: { razonSocial: true } },
+                product: { select: { descripcion: true } },
+            }
+        });
+
+        // 1. Kg por día
+        const byDay: Record<string, number> = {};
+        // 2. Kg por empresa (top 8)
+        const byCompany: Record<string, number> = {};
+        // 3. Kg por producto (top 8)
+        const byProduct: Record<string, number> = {};
+        // 4. Conteo por tipo de movimiento
+        const byType: Record<string, number> = { PURCHASE: 0, SALE: 0, INTERNAL: 0 };
+        // 5. Totales
+        let totalKg = 0, totalTickets = 0;
+
+        tickets.forEach(t => {
+            const kg = Number(t.weightNet || 0);
+            totalKg += kg;
+            totalTickets++;
+
+            // Por día
+            if (t.datetimeOut) {
+                const dayKey = new Date(t.datetimeOut).toISOString().split('T')[0];
+                byDay[dayKey] = (byDay[dayKey] || 0) + kg;
+            }
+
+            // Por empresa
+            const compName = t.company?.razonSocial || 'Sin empresa';
+            byCompany[compName] = (byCompany[compName] || 0) + kg;
+
+            // Por producto
+            const prodName = (t.product?.descripcion || 'Sin producto').split(' ').slice(0, 2).join(' ');
+            byProduct[prodName] = (byProduct[prodName] || 0) + kg;
+
+            // Por tipo
+            byType[t.movementType] = (byType[t.movementType] || 0) + kg;
+        });
+
+        // Serializar y ordenar resultados
+        const dailyChart = Object.keys(byDay).sort().map(d => ({
+            date: d.split('-').slice(1).join('/'),
+            kg: Math.round(byDay[d])
+        }));
+
+        const companyChart = Object.entries(byCompany)
+            .sort((a, b) => b[1] - a[1]).slice(0, 8)
+            .map(([name, kg]) => ({ name, kg: Math.round(kg) }));
+
+        const productChart = Object.entries(byProduct)
+            .sort((a, b) => b[1] - a[1]).slice(0, 8)
+            .map(([name, kg]) => ({ name, kg: Math.round(kg) }));
+
+        const movTypeChart = [
+            { name: 'Compras', kg: Math.round(byType.PURCHASE), fill: '#6366f1' },
+            { name: 'Ventas', kg: Math.round(byType.SALE), fill: '#10b981' },
+            { name: 'Interno', kg: Math.round(byType.INTERNAL), fill: '#f59e0b' },
+        ];
+
+        res.json({
+            summary: { totalKg: Math.round(totalKg), totalTickets },
+            dailyChart,
+            companyChart,
+            productChart,
+            movTypeChart
+        });
+
+    } catch (e: any) { res.status(400).json({ error: e.message }) }
+});
+
 export default router;
