@@ -4,9 +4,9 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware
 
 const router = Router();
 
-// Todas las rutas de entidades requieren ser ADMIN
+// Todas las rutas de entidades requieren autenticación
 router.use(authenticateToken);
-router.use(authorizeRoles('ADMIN'));
+router.use(authorizeRoles('ADMIN', 'OPERATOR', 'AUDITOR'));
 
 // --- COMPANIES (Clientes y Proveedores) ---
 router.get('/companies', async (req, res) => {
