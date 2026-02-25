@@ -41,7 +41,23 @@ router.put('/:id', async (req: any, res) => {
         const { id } = req.params;
         const { email, name, role, password } = req.body;
 
+        // PROTECCION SUPERADMIN: Buscar el usuario actual antes de actualizar
+        const targetUser = await prisma.user.findUnique({ where: { id: parseInt(id) } });
+
         const data: any = { email, name, role };
+
+        if (targetUser?.email === 'admin@bascula.com') {
+            // Impedir cambio de email o rol al maestro
+            delete data.role;
+            delete data.email;
+            if (email && email !== 'admin@bascula.com') {
+                return res.status(403).json({ error: "No se puede cambiar el email del administrador maestro." });
+            }
+            if (role && role !== 'ADMIN') {
+                return res.status(403).json({ error: "No se puede cambiar el rol del administrador maestro." });
+            }
+        }
+
         if (password) {
             data.passwordHash = await bcrypt.hash(password, 10);
         }
@@ -60,6 +76,13 @@ router.put('/:id', async (req: any, res) => {
 router.delete('/:id', async (req: any, res) => {
     try {
         const { id } = req.params;
+
+        // PROTECCION SUPERADMIN: No se puede eliminar al maestro
+        const targetUser = await prisma.user.findUnique({ where: { id: parseInt(id) } });
+        if (targetUser?.email === 'admin@bascula.com') {
+            return res.status(403).json({ error: "El administrador maestro no puede ser eliminado." });
+        }
+
         await prisma.user.delete({ where: { id: parseInt(id) } });
 
         await logAction(req.user.id, 'ELIMINACION_USUARIO', { targetUserId: id });
