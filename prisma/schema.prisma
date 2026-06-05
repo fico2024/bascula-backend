@@ -68,6 +68,27 @@ model Product {
   updatedAt      DateTime @updatedAt
 
   tickets        WeighingTicket[]
+  productionRecords ProductionRecord[]
+}
+
+model Plant {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  productionRecords ProductionRecord[]
+}
+
+model ProductionRecord {
+  id        Int      @id @default(autoincrement())
+  turno     String   // "Mañana", "Tarde", "Noche"
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  plantId   Int
+  plant     Plant    @relation(fields: [plantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Vehicle {

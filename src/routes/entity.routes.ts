@@ -138,4 +138,34 @@ router.put('/drivers/:id', async (req, res) => {
     } catch (e: any) { res.status(400).json({ error: e.message }) }
 });
 
+// --- PLANTS ---
+router.get('/plants', async (req, res) => {
+    try {
+        const data = await prisma.plant.findMany();
+        res.json(data);
+    } catch (e: any) { res.status(500).json({ error: e.message }) }
+});
+
+router.post('/plants', async (req, res) => {
+    try {
+        const item = await prisma.plant.create({ data: req.body });
+        res.json(item);
+    } catch (e: any) { res.status(400).json({ error: e.message }) }
+});
+
+router.delete('/plants/:id', async (req, res) => {
+    try {
+        await prisma.plant.delete({ where: { id: parseInt(req.params.id) } });
+        res.json({ success: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }) }
+});
+
+router.put('/plants/:id', async (req, res) => {
+    try {
+        const { id, createdAt, updatedAt, ...rest } = req.body;
+        const item = await prisma.plant.update({ where: { id: parseInt(req.params.id) }, data: rest });
+        res.json(item);
+    } catch (e: any) { res.status(400).json({ error: e.message }) }
+});
+
 export default router;

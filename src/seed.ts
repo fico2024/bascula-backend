@@ -11,23 +11,30 @@ async function main() {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
         console.log('El usuario administrador ya existe.');
-        return;
+    } else {
+        const passwordHash = await bcrypt.hash(password, 10);
+        const user = await prisma.user.create({
+            data: {
+                email,
+                passwordHash,
+                name,
+                role: 'ADMIN'
+            }
+        });
+        console.log('Usuario administrador creado con éxito:');
+        console.log('Email:', email);
+        console.log('Password:', password);
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const user = await prisma.user.create({
-        data: {
-            email,
-            passwordHash,
-            name,
-            role: 'ADMIN'
+    // Sembrar plantas iniciales: opcion 1 a opcion 5
+    for (let i = 1; i <= 5; i++) {
+        const plantName = `opcion ${i}`;
+        const existingPlant = await prisma.plant.findUnique({ where: { nombre: plantName } });
+        if (!existingPlant) {
+            await prisma.plant.create({ data: { nombre: plantName } });
+            console.log(`Planta creada: ${plantName}`);
         }
-    });
-
-    console.log('Usuario administrador creado con éxito:');
-    console.log('Email:', email);
-    console.log('Password:', password);
+    }
 }
 
 main()

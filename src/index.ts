@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import settingsRoutes from './routes/settings.routes';
 import statsRoutes from './routes/stats.routes';
+import productionRoutes from './routes/production.routes';
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/system-settings', settingsRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/production', productionRoutes);
 
 // Main health route
 app.get('/api/health', (req, res) => {
