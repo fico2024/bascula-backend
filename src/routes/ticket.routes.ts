@@ -23,7 +23,9 @@ router.post('/in', async (req, res) => {
             observations,
             origen,
             destino,
-            isManual
+            isManual,
+            packagingType,
+            packagingQty
         } = req.body;
 
         const ticket = await prisma.weighingTicket.create({
@@ -41,6 +43,8 @@ router.post('/in', async (req, res) => {
                 observations,
                 origen,
                 destino,
+                packagingType,
+                packagingQty: packagingQty ? parseInt(packagingQty) : null,
                 datetimeIn: new Date()
             }
         });
@@ -67,7 +71,9 @@ router.post('/single-pass', async (req, res) => {
             observations,
             origen,
             destino,
-            isManual
+            isManual,
+            packagingType,
+            packagingQty
         } = req.body;
 
         const vehicle = await prisma.vehicle.findUnique({ where: { id: parseInt(vehicleId) } });
@@ -115,6 +121,8 @@ router.post('/single-pass', async (req, res) => {
                 observations,
                 origen,
                 destino,
+                packagingType,
+                packagingQty: packagingQty ? parseInt(packagingQty) : null,
                 datetimeIn: new Date(),
                 datetimeOut: new Date()
             },

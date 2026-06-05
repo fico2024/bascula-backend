@@ -135,6 +135,8 @@ model WeighingTicket {
   observations    String?      @db.Text
   origen          String?      // Lugar de origen del viaje
   destino         String?      // Lugar de destino del viaje
+  packagingType   String?      // Bolsa o Bolsones
+  packagingQty    Int?         // Cantidad
   
   // Relaciones
   userId          Int
