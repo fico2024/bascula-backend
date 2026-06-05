@@ -25,7 +25,10 @@ router.post('/in', async (req, res) => {
             destino,
             isManual,
             packagingType,
-            packagingQty
+            packagingQty,
+            isManualDriver,
+            manualDriverName,
+            manualDriverDni
         } = req.body;
 
         const ticket = await prisma.weighingTicket.create({
@@ -37,7 +40,9 @@ router.post('/in', async (req, res) => {
                 vehicleId,
                 companyId,
                 productId,
-                driverId,
+                driverId: isManualDriver ? null : parseInt(driverId),
+                driverNameManual: isManualDriver ? manualDriverName : null,
+                driverDniManual: isManualDriver ? manualDriverDni : null,
                 userId: userId || 1,
                 referenciaGuia,
                 observations,
@@ -73,7 +78,10 @@ router.post('/single-pass', async (req, res) => {
             destino,
             isManual,
             packagingType,
-            packagingQty
+            packagingQty,
+            isManualDriver,
+            manualDriverName,
+            manualDriverDni
         } = req.body;
 
         const vehicle = await prisma.vehicle.findUnique({ where: { id: parseInt(vehicleId) } });
@@ -115,7 +123,9 @@ router.post('/single-pass', async (req, res) => {
                 vehicleId: parseInt(vehicleId),
                 companyId: parseInt(companyId),
                 productId: parseInt(productId),
-                driverId: parseInt(driverId),
+                driverId: isManualDriver ? null : parseInt(driverId),
+                driverNameManual: isManualDriver ? manualDriverName : null,
+                driverDniManual: isManualDriver ? manualDriverDni : null,
                 userId: userId || 1,
                 referenciaGuia,
                 observations,

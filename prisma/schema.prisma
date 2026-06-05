@@ -151,8 +151,10 @@ model WeighingTicket {
   vehicleId       Int
   vehicle         Vehicle      @relation(fields: [vehicleId], references: [id])
   
-  driverId        Int
-  driver          Driver       @relation(fields: [driverId], references: [id])
+  driverId        Int?
+  driver          Driver?      @relation(fields: [driverId], references: [id])
+  driverNameManual String?
+  driverDniManual  String?
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
